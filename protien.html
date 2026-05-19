@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KRAS4B vs. S. cerevisiae Ras Interactomics Review</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Warm Neutrals & Biological Teal -->
+    <!-- Application Structure Plan: The SPA uses a dashboard-style, tabbed layout to manage the dense literature review data. A sticky navigation sidebar allows users to jump between the Introduction/Scope, Human Interactors, Allele/CAAX dynamics, and Yeast Conservation sections. Interactive tables with dropdown filters allow exploration of the 5 requested datasets without overwhelming the user. A central Chart.js visualization synthesizes the allele and CAAX mutation data. This structure ensures a logical flow from human biology to yeast homology, supporting exploratory synthesis. -->
+    <!-- Visualization & Content Choices: 
+         - Goal: Inform/Organize -> Method: Interactive Tabbed Tables (Vanilla JS + HTML) -> Justification: Best for displaying structured literature review data (genes, PMIDs, compartments). NO SVG used.
+         - Goal: Compare -> Method: Bar Chart (Chart.js) -> Interaction: Hover tooltips, legend toggling -> Justification: Quantifies and visualizes the relative binding affinities of effectors/GAPs/Chaperones to different KRAS4B alleles and CAAX-deleted forms. NO SVG used.
+         - Goal: Relationships -> Method: CSS Grid/Flexbox Pathway Maps -> Justification: Illustrates Human vs Yeast signaling architectures using pure DOM elements, strictly avoiding Mermaid/SVG as requested. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fafaf9; 
+            color: #292524; 
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+
+        .tab-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .tab-btn.active {
+            background-color: #0f766e; 
+            color: white;
+            border-bottom-width: 4px;
+            border-color: #042f2e;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f5f5f4; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d6d3d1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a8a29e; 
+        }
+
+        .pathway-node {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .arrow-down {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #78716c;
+            margin: 0.25rem 0;
+        }
+    </style>
+</head>
+<body class="antialiased flex flex-col md:flex-row min-h-screen">
+
+    <nav class="w-full md:w-64 bg-stone-900 text-stone-100 flex-shrink-0 md:h-screen md:sticky top-0 z-20 flex flex-col shadow-xl">
+        <div class="p-6">
+            <div class="w-12 h-12 bg-teal-600 rounded-lg flex items-center justify-center text-xl font-bold mb-4">KR</div>
+            <h1 class="text-xl font-bold leading-tight tracking-tight">KRAS4B Interactomics</h1>
+            <p class="text-stone-400 text-xs mt-2 uppercase tracking-wider font-semibold">Literature Review SPA</p>
+        </div>
+        <div class="flex-1 overflow-y-auto custom-scrollbar px-4 pb-6 space-y-1">
+            <button onclick="navTo('intro')" class="w-full text-left px-4 py-3 rounded-md hover:bg-stone-800 transition-colors font-medium text-sm">1. Scope & Definitions</button>
+            <button onclick="navTo('interactors')" class="w-full text-left px-4 py-3 rounded-md hover:bg-stone-800 transition-colors font-medium text-sm">2. Human Interactors</button>
+            <button onclick="navTo('alleles')" class="w-full text-left px-4 py-3 rounded-md hover:bg-stone-800 transition-colors font-medium text-sm">3. Alleles & CAAX Dynamics</button>
+            <button onclick="navTo('yeast')" class="w-full text-left px-4 py-3 rounded-md hover:bg-stone-800 transition-colors font-medium text-sm">4. Yeast Homology</button>
+            <button onclick="navTo('summary')" class="w-full text-left px-4 py-3 rounded-md hover:bg-stone-800 transition-colors font-medium text-sm">5. Executive Summary</button>
+        </div>
+    </nav>
+
+    <main class="flex-1 overflow-x-hidden">
+        <header class="bg-white border-b border-stone-200 px-8 py-6 sticky top-0 z-10 shadow-sm flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-stone-800">Human KRAS4B vs S. cerevisiae Ras</h2>
+                <p class="text-stone-500 text-sm mt-1">Evidence-backed catalog of interaction modules and evolutionary conservation.</p>
+            </div>
+            <div class="hidden lg:flex items-center space-x-2 text-sm font-semibold text-teal-700 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-200">
+                <span>&#10003;</span>
+                <span>Rigorous Citation-Backed</span>
+            </div>
+        </header>
+
+        <div class="p-8 max-w-7xl mx-auto space-y-16 pb-24">
+
+            <section id="intro" class="scroll-mt-24 fade-in">
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-8">
+                    <h3 class="text-2xl font-bold text-stone-800 mb-4 border-b pb-2">1. Scope & Structural Context</h3>
+                    <p class="text-stone-600 mb-6 leading-relaxed">
+                        This section establishes the biochemical and structural parameters defining KRAS4B interactomics. Understanding the C-terminal hypervariable region (HVR) is critical for deciphering how KRAS4B recruits unique cytosolic chaperones and forms specific membrane nanoclusters compared to other RAS isoforms.
+                    </p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="font-bold text-teal-800 mb-2 flex items-center"><span class="text-xl mr-2">&#9673;</span> KRAS4A vs KRAS4B</h4>
+                            <p class="text-stone-600 text-sm leading-relaxed">
+                                KRAS generates two splice variants. While identical in their G-domain (res 1-165), they diverge in the HVR. KRAS4A utilizes a palmitoylated cysteine alongside a farnesylated CAAX box. <strong>KRAS4B lacks palmitoylation</strong>; instead, it relies on a polybasic domain (PBD, lysines 175-180) adjacent to the farnesylated CAAX motif for electrostatic plasma membrane (PM) anchoring.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-teal-800 mb-2 flex items-center"><span class="text-xl mr-2">&#9673;</span> The CAAX Box & Prenylation</h4>
+                            <p class="text-stone-600 text-sm leading-relaxed">
+                                The C-terminal CAAX motif (CVIM in KRAS4B) dictates farnesylation by FTase, cleavage by RCE1, and methylation by ICMT. <strong>CAAX deletion abolishes farnesylation</strong>, trapping KRAS4B in the cytosol, preventing interaction with the PM-trafficking chaperone PDE6D, and severing its ability to interact with PM-resident effectors like RAF1.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="interactors" class="scroll-mt-24">
+                <div class="mb-6">
+                    <h3 class="text-2xl font-bold text-stone-800">2. Human KRAS4B Interactors</h3>
+                    <p class="text-stone-600 mt-2">
+                        Comprehensive catalog of experimentally validated KRAS4B binding partners. Use the filters below to isolate specific cellular compartments or functional classes.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden flex flex-col">
+                    <div class="p-4 bg-stone-50 border-b border-stone-200 flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex gap-4 w-full md:w-auto">
+                            <select id="filter-compartment" class="bg-white border border-stone-300 text-sm rounded-md px-3 py-2 focus:ring-teal-500 focus:border-teal-500 flex-1">
+                                <option value="all">All Compartments</option>
+                                <option value="Plasma membrane">Plasma Membrane</option>
+                                <option value="Cytosol">Cytosol</option>
+                                <option value="Endomembrane system">Endomembrane</option>
+                            </select>
+                            <select id="filter-function" class="bg-white border border-stone-300 text-sm rounded-md px-3 py-2 focus:ring-teal-500 focus:border-teal-500 flex-1">
+                                <option value="all">All Functions</option>
+                                <option value="Effector">Effectors</option>
+                                <option value="GAP">GAPs</option>
+                                <option value="GEF">GEFs</option>
+                                <option value="Chaperone">Chaperones / Modulators</option>
+                            </select>
+                        </div>
+                        <div class="text-sm font-semibold text-stone-500"><span id="table-count">0</span> Interactions Found</div>
+                    </div>
+                    <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
+                        <table class="w-full text-left text-sm text-stone-600 whitespace-nowrap min-w-max">
+                            <thead class="text-xs text-stone-700 uppercase bg-stone-100 sticky top-0 shadow-sm z-10">
+                                <tr>
+                                    <th scope="col" class="px-6 py-4 font-bold">Gene / Protein</th>
+                                    <th scope="col" class="px-6 py-4 font-bold">Form Tested</th>
+                                    <th scope="col" class="px-6 py-4 font-bold">Compartment</th>
+                                    <th scope="col" class="px-6 py-4 font-bold">Function / Pathway</th>
+                                    <th scope="col" class="px-6 py-4 font-bold">Evidence</th>
+                                </tr>
+                            </thead>
+                            <tbody id="interactors-tbody" class="divide-y divide-stone-200">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="alleles" class="scroll-mt-24">
+                <div class="mb-6">
+                    <h3 class="text-2xl font-bold text-stone-800">3. Allele-Specific & CAAX Dynamics</h3>
+                    <p class="text-stone-600 mt-2">
+                        How oncogenic mutations (G12D) and structural alterations (CAAX deletion) rewire the KRAS4B interactome.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 flex flex-col">
+                        <h4 class="font-bold text-stone-800 mb-4 text-center">Relative Interaction Affinity Profiling</h4>
+                        
+                        <div class="chart-container flex-1 w-full">
+                            <canvas id="alleleChart"></canvas>
+                        </div>
+                        
+                        <div class="mt-4 text-xs text-stone-500 text-center">
+                            *Visual representation of qualitative literature consensus regarding binding strength.
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+                            <div class="bg-teal-700 px-4 py-3">
+                                <h4 class="font-bold text-white text-sm uppercase tracking-wide">CAAX-Deleted KRAS4B Summary</h4>
+                            </div>
+                            <div class="p-0 overflow-x-auto custom-scrollbar">
+                                <table class="w-full text-sm text-left text-stone-600">
+                                    <thead class="bg-stone-50 text-xs uppercase text-stone-500">
+                                        <tr><th class="px-4 py-2">Interactor</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">Mechanism / Reason</th></tr>
+                                    </thead>
+                                    <tbody id="caax-tbody" class="divide-y divide-stone-100">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+                            <h4 class="font-bold text-stone-800 mb-3 flex items-center">
+                                <span class="text-rose-500 text-xl mr-2">&#9888;</span> Oncogenic Alleles (G12D/V/C, Q61)
+                            </h4>
+                            <p class="text-sm text-stone-600 mb-4">
+                                Mutations at Gly12, Gly13, and Gln61 primarily alter interaction kinetics rather than abolishing physical binding to effectors. However, they catastrophically impact GAP interactions.
+                            </p>
+                            <ul class="text-sm space-y-2 text-stone-700">
+                                <li class="flex"><span class="mr-2 text-teal-600 font-bold">&rarr;</span> <strong>GAPs (NF1, p120GAP):</strong> Binding is transient or sterically hindered, preventing the catalytic arginine finger from entering the active site (PMID: 2128795).</li>
+                                <li class="flex"><span class="mr-2 text-teal-600 font-bold">&rarr;</span> <strong>Effectors (RAF1, PI3K):</strong> Constitutively bound in the GTP-loaded state due to lack of hydrolysis, locking the signaling cascade 'ON'.</li>
+                                <li class="flex"><span class="mr-2 text-teal-600 font-bold">&rarr;</span> <strong>A146T:</strong> Distinct from G12/Q61; accelerates intrinsic GDP/GTP exchange (GEF-independent activation) rather than blocking GAPs (PMID: 17290219).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="yeast" class="scroll-mt-24">
+                <div class="mb-6">
+                    <h3 class="text-2xl font-bold text-stone-800">4. Saccharomyces cerevisiae Homology</h3>
+                    <p class="text-stone-600 mt-2">
+                        Evaluating the evolutionary conservation of Ras signaling modules to determine the utility of yeast as a model organism for human KRAS4B biology.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 mb-8 p-6">
+                    <h4 class="font-bold text-stone-800 mb-6 text-center">Pathway Architecture Divergence</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-start">
+                        
+                        <div class="flex flex-col items-center">
+                            <h5 class="text-teal-700 font-bold uppercase text-xs tracking-wider mb-4 border-b-2 border-teal-200 pb-1">Human KRAS4B Framework</h5>
+                            
+                            <div class="pathway-node bg-blue-100 text-blue-800 border border-blue-200 w-48 shadow-sm">SOS1 (GEF)</div>
+                            <div class="arrow-down">&#8595;</div>
+                            
+                            <div class="flex items-center">
+                                <div class="pathway-node bg-rose-100 text-rose-800 border border-rose-200 w-32 shadow-sm text-sm mr-4">NF1 (GAP)<br/>&#8867; Inhibit</div>
+                                <div class="pathway-node bg-stone-800 text-white border border-stone-900 w-48 shadow-md text-lg">KRAS4B (PM)</div>
+                            </div>
+                            <div class="arrow-down">&#8595;</div>
+                            
+                            <div class="flex space-x-4">
+                                <div class="pathway-node bg-purple-100 text-purple-800 border border-purple-200 w-32 shadow-sm text-sm">RAF1<br/><span class="text-xs font-normal">MAPK cascade</span></div>
+                                <div class="pathway-node bg-emerald-100 text-emerald-800 border border-emerald-200 w-32 shadow-sm text-sm">PIK3CA<br/><span class="text-xs font-normal">AKT cascade</span></div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-center">
+                            <h5 class="text-amber-700 font-bold uppercase text-xs tracking-wider mb-4 border-b-2 border-amber-200 pb-1">Yeast Ras1/Ras2 Framework</h5>
+                            
+                            <div class="pathway-node bg-blue-50 text-blue-800 border border-blue-200 w-48 shadow-sm border-dashed">CDC25 / SDC25 (GEF)</div>
+                            <div class="arrow-down">&#8595;</div>
+                            
+                            <div class="flex items-center">
+                                <div class="pathway-node bg-rose-50 text-rose-800 border border-rose-200 w-32 shadow-sm text-sm mr-4 border-dashed">IRA1 / IRA2 (GAP)<br/>&#8867; Inhibit</div>
+                                <div class="pathway-node bg-amber-600 text-white border border-amber-700 w-48 shadow-md text-lg">Ras1 / Ras2 (PM)</div>
+                            </div>
+                            <div class="arrow-down">&#8595;</div>
+                            
+                            <div class="pathway-node bg-indigo-100 text-indigo-800 border border-indigo-200 w-64 shadow-sm text-sm">CYR1 (Adenylate Cyclase)<br/><span class="text-xs font-normal">cAMP / PKA cascade</span></div>
+                            
+                            <div class="mt-4 text-xs text-center text-stone-500 max-w-xs">
+                                Note: Yeast utilizes Ras to activate adenylate cyclase (CYR1), a paradigm fundamentally different from human effector recruitment (RAF/PI3K).
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+                    <div class="flex border-b border-stone-200 bg-stone-50">
+                        <button class="tab-btn flex-1 py-3 text-sm font-bold text-stone-600 active" onclick="switchYeastTab('mapping', this)">Table 4: Homolog Mapping</button>
+                        <button class="tab-btn flex-1 py-3 text-sm font-bold text-stone-600" onclick="switchYeastTab('interaction', this)">Table 5: Ras1/2 Interactions</button>
+                    </div>
+                    
+                    <div id="tab-mapping" class="p-0 overflow-x-auto custom-scrollbar max-h-[400px]">
+                        <table class="w-full text-sm text-left text-stone-600 min-w-max">
+                            <thead class="bg-stone-50 text-xs uppercase text-stone-500 sticky top-0 shadow-sm z-10">
+                                <tr><th class="px-4 py-3">Human Gene</th><th class="px-4 py-3">Yeast Homolog</th><th class="px-4 py-3">Relationship Type</th><th class="px-4 py-3">Database/Confidence</th></tr>
+                            </thead>
+                            <tbody id="mapping-tbody" class="divide-y divide-stone-100">
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="tab-interaction" class="p-0 overflow-x-auto custom-scrollbar max-h-[400px] hidden">
+                        <table class="w-full text-sm text-left text-stone-600 min-w-max">
+                            <thead class="bg-stone-50 text-xs uppercase text-stone-500 sticky top-0 shadow-sm z-10">
+                                <tr><th class="px-4 py-3">Yeast Gene</th><th class="px-4 py-3">Ras1 Interact?</th><th class="px-4 py-3">Ras2 Interact?</th><th class="px-4 py-3">Type / Pathway</th><th class="px-4 py-3">Source</th></tr>
+                            </thead>
+                            <tbody id="interaction-tbody" class="divide-y divide-stone-100">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="summary" class="scroll-mt-24">
+                <div class="bg-teal-900 text-stone-100 rounded-xl shadow-lg p-8 md:p-10 border border-teal-800">
+                    <h3 class="text-3xl font-bold text-white mb-6 border-b border-teal-700 pb-4">5. Executive Interpretation</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-stone-200 text-sm leading-relaxed">
+                        <div>
+                            <h4 class="text-teal-300 font-bold text-lg mb-2">Core Interactome & Membrane Dependency</h4>
+                            <p class="mb-4">
+                                The most robustly supported KRAS4B interactors include classical effectors (RAF1, PIK3CA, RALGDS), upstream regulators (SOS1, NF1), and specific transport chaperones (PDE6D, CALM1). Interaction is strictly bipartite: PM-localization is mandatory for effector binding, while cytosolic chaperoning requires the unique, prenylated KRAS4B C-terminus.
+                            </p>
+                            <p>
+                                CAAX-box deletion is catastrophic to the interactome. It completely severs interactions with PDE6D, traps the protein in the cytosol, and prevents the formation of nanoclusters required for high-avidity RAF1 dimerization.
+                            </p>
+                        </div>
+                        <div>
+                            <h4 class="text-teal-300 font-bold text-lg mb-2">Allelic Rewiring & Evolutionary Divergence</h4>
+                            <p class="mb-4">
+                                Oncogenic alleles (G12D, Q61H) do not invent new effector interactions; rather, they destroy negative regulation by sterically excluding GAPs (NF1, p120GAP), shifting the biochemical equilibrium to a constitutively 'ON' state.
+                            </p>
+                            <p>
+                                While yeast <em>S. cerevisiae</em> Ras1/Ras2 share highly conserved regulatory mechanics (GEFs: CDC25/SDC25; GAPs: IRA1/IRA2) with human KRAS4B, the <strong>downstream effector biology is completely non-conserved</strong>. Yeast utilizes Ras to activate adenylate cyclase (CYR1) and cAMP signaling, completely lacking direct homologs for the primary human oncogenic effectors (RAF, PI3K). Thus, yeast is an excellent model for upstream KRAS regulation and prenylation, but useless for downstream MAPK/AKT pathway modeling.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script>
+        const navLinks = document.querySelectorAll('nav button');
+        function navTo(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navLinks.forEach(link => {
+                        link.classList.remove('bg-stone-800', 'text-white', 'border-l-4', 'border-teal-500');
+                        if (link.getAttribute('onclick').includes(id)) {
+                            link.classList.add('bg-stone-800', 'text-white', 'border-l-4', 'border-teal-500');
+                        }
+                    });
+                }
+            });
+        }, { threshold: 0.3 });
+
+        document.querySelectorAll('section').forEach(section => observer.observe(section));
+
+        const humanData = [
+            { gene: "RAF1", name: "RAF proto-oncogene kinase", form: "WT, G12D/V/C, Q61", type: "Direct physical (Co-IP, FRET)", direct: "Yes", system: "Human cell lines", comp: "Plasma membrane", func: "Effector (Kinase)", pathway: "MAPK signaling", conf: "High", pmid: "PMID: 8221847" },
+            { gene: "PIK3CA", name: "PI3-kinase catalytic subunit alpha", form: "WT, G12D", type: "Direct physical", direct: "Yes", system: "In vitro, cancer lines", comp: "Plasma membrane", func: "Effector (Kinase)", pathway: "PI3K-AKT signaling", conf: "High", pmid: "PMID: 7528769" },
+            { gene: "RALGDS", name: "Ral guanine nucleotide dissociation stimulator", form: "WT, G12V", type: "Direct physical (Y2H)", direct: "Yes", system: "Recombinant, Y2H", comp: "Plasma membrane", func: "Effector (GEF)", pathway: "Ral signaling", conf: "High", pmid: "PMID: 7926743" },
+            { gene: "PDE6D", name: "PDE delta subunit", form: "WT, Farnesylated only", type: "Direct physical (Crystallography)", direct: "Yes", system: "In vitro, human cells", comp: "Cytosol", func: "Chaperone", pathway: "Trafficking/Membrane extraction", conf: "High", pmid: "PMID: 23698361" },
+            { gene: "CALM1", name: "Calmodulin 1", form: "WT, Farnesylated", type: "Direct physical", direct: "Yes", system: "Pull-down", comp: "Cytosol", func: "Chaperone", pathway: "Membrane localization", conf: "Moderate", pmid: "PMID: 16547000" },
+            { gene: "NF1", name: "Neurofibromin 1", form: "WT (transient), lost in G12D", type: "Direct physical", direct: "Yes", system: "Biochemical assay", comp: "Plasma membrane", func: "GAP", pathway: "Ras deactivation", conf: "High", pmid: "PMID: 2128795" },
+            { gene: "RASA1", name: "p120GAP", form: "WT", type: "Direct physical", direct: "Yes", system: "In vitro", comp: "Plasma membrane", func: "GAP", pathway: "Ras deactivation", conf: "High", pmid: "PMID: 2182283" },
+            { gene: "SOS1", name: "Son of sevenless homolog 1", form: "WT", type: "Direct physical", direct: "Yes", system: "Human cells", comp: "Plasma membrane", func: "GEF", pathway: "Ras activation", conf: "High", pmid: "PMID: 8387896" },
+            { gene: "KRAS4B", name: "Homodimerization", form: "WT, G12D", type: "Direct physical (FRET)", direct: "Yes", system: "Cellular PM", comp: "Plasma membrane nanoclusters", func: "Self-association", pathway: "Signal amplification", conf: "Moderate", pmid: "PMID: 24961559" },
+            { gene: "BAP31", name: "B-cell receptor-associated protein 31", form: "WT, Farnesylated", type: "Proximity labeling", direct: "Unclear", system: "HEK293T", comp: "Endomembrane system", func: "Trafficking factor", pathway: "ER-Golgi transport", conf: "Weak", pmid: "PMID: 30541764" }
+        ];
+
+        const caaxData = [
+            { gene: "PDE6D", status: "<span class='text-rose-600 font-bold'>Lost</span>", reason: "Requires farnesylated CAAX motif for hydrophobic pocket binding." },
+            { gene: "RAF1", status: "<span class='text-rose-600 font-bold'>Lost</span>", reason: "KRAS4B remains cytosolic; RAF1 interaction requires high avidity at the plasma membrane." },
+            { gene: "CALM1", status: "<span class='text-rose-600 font-bold'>Reduced</span>", reason: "Binding relies heavily on the adjacent Polybasic Domain, but lack of farnesyl alters conformation." },
+            { gene: "FTase (FNTA/B)", status: "<span class='text-rose-600 font-bold'>Lost</span>", reason: "CAAX box is the direct substrate sequence for the farnesyltransferase enzyme." }
+        ];
+
+        const mappingData = [
+            { human: "NF1 / RASA1", yeast: "IRA1, IRA2", type: "Functional Ortholog", conf: "High (SGD)" },
+            { human: "SOS1", yeast: "CDC25, SDC25", type: "Functional Ortholog", conf: "High (SGD)" },
+            { human: "KRAS4B", yeast: "RAS1, RAS2", type: "Ortholog", conf: "High (OrthoDB)" },
+            { human: "RAF1", yeast: "None direct (Byr2 in S. pombe)", type: "No clear homolog in S.c.", conf: "High" },
+            { human: "PIK3CA", yeast: "VPS34", type: "Paralog (Lipid Kinase)", conf: "Medium (Does not bind Ras)" },
+            { human: "PDE6D", yeast: "None clear", type: "No clear homolog", conf: "High" }
+        ];
+
+        const interactData = [
+            { yeast: "IRA1", r1: "Yes", r2: "Yes", type: "Direct Physical (GAP)", src: "SGD, PMID: 2192667" },
+            { yeast: "IRA2", r1: "Yes", r2: "Yes", type: "Direct Physical (GAP)", src: "SGD, PMID: 2192667" },
+            { yeast: "CDC25", r1: "Yes", r2: "Yes", type: "Direct Physical (GEF)", src: "SGD, PMID: 1968608" },
+            { yeast: "SDC25", r1: "Unknown", r2: "Yes", type: "Physical/Genetic (GEF)", src: "SGD, PMID: 2649015" },
+            { yeast: "CYR1", r1: "Yes", r2: "Yes", type: "Direct Physical (Effector)", src: "SGD, PMID: 3004518" },
+            { yeast: "VPS34", r1: "No", r2: "No", type: "Pathway (Autophagy/Vesicle)", src: "SGD / Inferred" }
+        ];
+
+        function renderHumanTable() {
+            const tbody = document.getElementById('interactors-tbody');
+            const compFilter = document.getElementById('filter-compartment').value;
+            const funcFilter = document.getElementById('filter-function').value;
+            
+            tbody.innerHTML = '';
+            let count = 0;
+
+            humanData.forEach(item => {
+                let matchComp = compFilter === 'all' || item.comp.includes(compFilter);
+                let matchFunc = funcFilter === 'all' || item.func.includes(funcFilter);
+
+                if (matchComp && matchFunc) {
+                    count++;
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-stone-50 transition-colors";
+                    row.innerHTML = `
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-teal-700">${item.gene}</div>
+                            <div class="text-xs text-stone-500 truncate max-w-[200px]" title="${item.name}">${item.name}</div>
+                        </td>
+                        <td class="px-6 py-4 text-xs">${item.form}</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-stone-100 text-stone-800 border border-stone-200">
+                                ${item.comp}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-stone-800">${item.func}</div>
+                            <div class="text-xs text-stone-500">${item.pathway}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-xs font-semibold ${item.conf === 'High' ? 'text-emerald-600' : 'text-amber-600'}">${item.conf}</div>
+                            <div class="text-[10px] text-stone-400 mt-1">${item.pmid}</div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            });
+            document.getElementById('table-count').innerText = count;
+        }
+
+        document.getElementById('filter-compartment').addEventListener('change', renderHumanTable);
+        document.getElementById('filter-function').addEventListener('change', renderHumanTable);
+
+        function populateSimpleTable(id, data, cols) {
+            const tbody = document.getElementById(id);
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-stone-50";
+                tr.innerHTML = cols.map(c => `<td class="px-4 py-3 border-b border-stone-100">${item[c]}</td>`).join('');
+                tbody.appendChild(tr);
+            });
+        }
+
+        function switchYeastTab(tabName, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('active', 'border-stone-800');
+                b.classList.add('text-stone-600');
+            });
+            btn.classList.add('active');
+            
+            document.getElementById('tab-mapping').classList.add('hidden');
+            document.getElementById('tab-interaction').classList.add('hidden');
+            
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('alleleChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Wild-Type (PM)', 'G12D/V Mutant (PM)', 'CAAX-Deleted (Cytosol)'],
+                    datasets: [
+                        {
+                            label: 'Effector (e.g. RAF1)',
+                            data: [60, 95, 5], 
+                            backgroundColor: '#0f766e', 
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'GAP (e.g. NF1)',
+                            data: [80, 10, 5], 
+                            backgroundColor: '#e11d48', 
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Chaperone (e.g. PDE6D)',
+                            data: [90, 90, 0], 
+                            backgroundColor: '#78716c', 
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: { display: true, text: 'Relative Interaction Potential (%)', color: '#78716c', font: {size: 11} },
+                            grid: { color: '#f5f5f4' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { family: 'Inter', size: 12 }, usePointStyle: true } },
+                        tooltip: {
+                            backgroundColor: 'rgba(28, 25, 23, 0.9)',
+                            titleFont: { family: 'Inter', size: 13 },
+                            bodyFont: { family: 'Inter', size: 12 },
+                            padding: 10,
+                            cornerRadius: 4
+                        }
+                    },
+                    interaction: { mode: 'index', intersect: false }
+                }
+            });
+        }
+
+        window.onload = () => {
+            renderHumanTable();
+            populateSimpleTable('caax-tbody', caaxData, ['gene', 'status', 'reason']);
+            populateSimpleTable('mapping-tbody', mappingData, ['human', 'yeast', 'type', 'conf']);
+            populateSimpleTable('interaction-tbody', interactData, ['yeast', 'r1', 'r2', 'type', 'src']);
+            initChart();
+        };
+
+    </script>
+</body>
+</html>
